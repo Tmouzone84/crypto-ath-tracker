@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import requests
+import time  # For rate-limiting
 
 # Set Streamlit Page Title
 st.set_page_config(page_title="Crypto ATH Breakout Tracker", layout="wide")
@@ -9,9 +10,14 @@ st.set_page_config(page_title="Crypto ATH Breakout Tracker", layout="wide")
 st.title("🚀 Crypto ATH Breakout Tracker")
 st.write("Live tracker for coins that have broken their previous all-time high.")
 
-# Function to fetch multiple pages of data (up to 500 coins)
+# ✅ Replace with your CoinGecko API Key
+API_KEY = "your_api_key_here"  # 🔥 Replace with your actual API key
+
+# ✅ Use the Pro API Endpoint
+API_BASE_URL = "https://pro-api.coingecko.com/api/v3/coins/markets"
+
+# Function to fetch multiple pages of data (Handles Rate Limits & API Key)
 def fetch_coins(pages=5, per_page=100):
-    url = "https://api.coingecko.com/api/v3/coins/markets"
     all_coins = []
 
     for page in range(1, pages + 1):
@@ -20,18 +26,26 @@ def fetch_coins(pages=5, per_page=100):
             "order": "market_cap_desc",
             "per_page": per_page,
             "page": page,
-            "sparkline": False
+            "sparkline": False,
+            "x_cg_pro_api_key": API_KEY  # 🔥 Include API key
         }
-        response = requests.get(url, params=params)
+
+        response = requests.get(API_BASE_URL, params=params)
 
         if response.status_code == 200:
             coins_data = response.json()
             if not coins_data:
                 break  # Stop if no more data
             all_coins.extend(coins_data)
+        elif response.status_code == 429:
+            st.error(f"⏳ Rate Limited! Waiting 60 seconds before retrying page {page}...")
+            time.sleep(60)  # Wait before retrying
+            continue
         else:
             st.error(f"Failed to fetch page {page}: Status Code {response.status_code}")
             break
+
+        time.sleep(1.5)  # Small delay to prevent hitting limits
 
     return all_coins
 
@@ -50,13 +64,13 @@ def format_number(num):
         return f"{num:.2f}"
 
 # Fetch Data
-coins_data = fetch_coins(pages=5, per_page=100)
+coins_data = fetch_coins(pages=10, per_page=100)  # Fetch 1000 coins (10 pages)
 
 if coins_data:
     # Convert API data to DataFrame
     df = pd.DataFrame(coins_data)
 
-    # 🔍 Fix Filtering Issue: Ensure ATH is compared correctly
+    # Check if coins have broken ATH
     df["ATH Broken"] = df.apply(lambda row: row["current_price"] > row["ath"] if pd.notna(row["ath"]) else False, axis=1)
 
     # Filter coins breaking ATH in USD
