@@ -62,7 +62,7 @@ if coins_data:
     st.write(f"Coins Breaking ATH in USD: {len(df_ath_usd)}")
 
     # Show results
-    st.subheader( Coins that Broke ATH in USD")
+    st.subheader( "Coins that Broke ATH in USD")
     if not df_ath_usd.empty:
         st.dataframe(df_ath_usd[["name", "symbol", "current_price", "ath", "ATH Broken", "last_updated"]])
     else:
