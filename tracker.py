@@ -9,6 +9,16 @@ st.set_page_config(page_title="Crypto ATH Breakout Tracker", layout="wide")
 st.title("Crypto ATH Breakout Tracker")
 st.write("Live tracker for coins that have broken their previous all-time high.")
 
+# Function to format large numbers
+def format_large_number(num):
+    if num >= 1_000_000_000:
+        return f"{num / 1_000_000_000:.2f}B"
+    elif num >= 1_000_000:
+        return f"{num / 1_000_000:.2f}M"
+    elif num >= 1_000:
+        return f"{num / 1_000:.2f}K"
+    return str(num)
+
 # Function to fetch data from multiple pages
 def fetch_coins(pages=5, per_page=100):  # Fetch 5 pages of 100 coins each (500 total)
     url = "https://api.coingecko.com/api/v3/coins/markets"
@@ -18,7 +28,7 @@ def fetch_coins(pages=5, per_page=100):  # Fetch 5 pages of 100 coins each (500 
         params = {
             "vs_currency": "usd",
             "order": "market_cap_desc",
-            "per_page": per_page,  # Max per page is 250
+            "per_page": per_page,
             "page": page,
             "sparkline": False
         }
@@ -39,34 +49,31 @@ def fetch_coins(pages=5, per_page=100):  # Fetch 5 pages of 100 coins each (500 
 coins_data = fetch_coins(pages=5, per_page=100)  # Fetch 500 coins
 
 if coins_data:
-    # Debug: Show full API response in Streamlit
-    st.subheader("Raw API Data")
-    st.write(coins_data)
-
     # Convert API data to DataFrame
     df = pd.DataFrame(coins_data)
 
-    # Debug: Display raw DataFrame in Streamlit
+    # Remove the "image" column
+    df.drop(columns=["image"], inplace=True)
+
+    # Format numerical columns for better readability
+    df["current_price"] = df["current_price"].apply(format_large_number)
+    df["market_cap"] = df["market_cap"].apply(format_large_number)
+    df["fully_diluted_valuation"] = df["fully_diluted_valuation"].apply(lambda x: format_large_number(x) if pd.notna(x) else "N/A")
+
+    # Rename columns for better readability
+    df.rename(columns={
+        "id": "ID",
+        "symbol": "Symbol",
+        "name": "Name",
+        "current_price": "Current Price (USD)",
+        "market_cap": "Market Cap",
+        "market_cap_rank": "Market Cap Rank",
+        "fully_diluted_valuation": "Fully Diluted Valuation"
+    }, inplace=True)
+
+    # Display the improved table
     st.subheader("Coins Data (Before Filtering)")
     st.dataframe(df)
-
-    # Filter coins that have broken their previous ATH
-    df["ATH Broken"] = df["current_price"] > df["ath"]
-
-    # Separate into two tables: Coins breaking ATH in USD and BTC
-    df_ath_usd = df[df["ATH Broken"] == True]
-
-    # Display Debugging Info
-    st.subheader(" Info")
-    st.write(f"Total Coins Fetched: {len(df)}")
-    st.write(f"Coins Breaking ATH in USD: {len(df_ath_usd)}")
-
-    # Show results
-    st.subheader( "Coins that Broke ATH in USD")
-    if not df_ath_usd.empty:
-        st.dataframe(df_ath_usd[["name", "symbol", "current_price", "ath", "ATH Broken", "last_updated"]])
-    else:
-        st.write("No coins have broken their previous ATH yet!")
 
 else:
     st.error("Failed to fetch data! No coins were retrieved.")
