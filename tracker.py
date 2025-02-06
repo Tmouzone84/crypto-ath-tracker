@@ -47,7 +47,7 @@ if coins_data:
     df = pd.DataFrame(coins_data)
 
     # Debug: Display raw DataFrame in Streamlit
-    st.subheader(Coins Data (Before Filtering)")
+    st.subheader("Coins Data (Before Filtering)")
     st.dataframe(df)
 
     # Filter coins that have broken their previous ATH
