@@ -6,7 +6,7 @@ import requests
 st.set_page_config(page_title="Crypto ATH Breakout Tracker", layout="wide")
 
 # Title & Description
-st.title("Crypto ATH Breakout Tracker")
+st.title("🚀 Crypto ATH Breakout Tracker")
 st.write("Live tracker for coins that have broken their previous all-time high.")
 
 # Function to format large numbers
@@ -52,7 +52,7 @@ if coins_data:
     # Convert API data to DataFrame
     df = pd.DataFrame(coins_data)
 
-    # Remove the "image" column
+    # Remove unnecessary columns
     df.drop(columns=["image"], inplace=True)
 
     # Format numerical columns for better readability
@@ -68,12 +68,31 @@ if coins_data:
         "current_price": "Current Price (USD)",
         "market_cap": "Market Cap",
         "market_cap_rank": "Market Cap Rank",
-        "fully_diluted_valuation": "Fully Diluted Valuation"
+        "fully_diluted_valuation": "Fully Diluted Valuation",
+        "ath": "ATH (USD)",
+        "ath_date": "ATH Date"
     }, inplace=True)
 
-    # Display the improved table
-    st.subheader("Coins Data (Before Filtering)")
-    st.dataframe(df)
+    # Convert "Current Price" and "ATH" back to float for proper filtering
+    df["Current Price (USD)"] = df["Current Price (USD)"].str.replace(",", "").astype(float)
+    df["ATH (USD)"] = df["ATH (USD)"].str.replace(",", "").astype(float)
+
+    # Filter coins breaking their ATH
+    df["ATH Broken"] = df["Current Price (USD)"] > df["ATH (USD)"]
+    df_ath = df[df["ATH Broken"] == True]
+
+    # Display full dataset
+    st.subheader("📊 All Coins Data")
+    st.write("This table includes all coins fetched from CoinGecko.")
+    st.dataframe(df[["Name", "Symbol", "Current Price (USD)", "ATH (USD)", "ATH Broken", "ATH Date"]])
+
+    # Display filtered results separately
+    st.subheader("🔥 Coins Breaking Their ATH")
+    if not df_ath.empty:
+        st.write("The table below only includes coins that have **broken their all-time high.**")
+        st.dataframe(df_ath[["Name", "Symbol", "Current Price (USD)", "ATH (USD)", "ATH Date"]])
+    else:
+        st.write("🚨 No coins have broken their previous ATH yet!")
 
 else:
     st.error("Failed to fetch data! No coins were retrieved.")
