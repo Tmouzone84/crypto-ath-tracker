@@ -60,12 +60,12 @@ if coins_data:
 
     # Display all coins data
     st.subheader("📊 Coins Data (Before Filtering)")
-    st.dataframe(df[["id", "symbol", "name", "current_price", "ath"]])
+    st.dataframe(df[["id", "symbol", "name", "current_price", "ath", "ath_date"]])
 
     # Show coins breaking ATH
     st.subheader("🔥 Coins that Broke ATH in USD")
     if not df_ath_usd.empty:
-        st.dataframe(df_ath_usd[["id", "symbol", "name", "current_price", "ath"]])
+        st.dataframe(df_ath_usd[["id", "symbol", "name", "current_price", "ath", "ath_date"]])
     else:
         st.write("🚨 No coins have broken their previous ATH yet!")
 
